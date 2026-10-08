@@ -1,0 +1,7 @@
+// Arquivo raiz: só declara os plugins. Cada módulo aplica os que precisa.
+plugins {
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+}

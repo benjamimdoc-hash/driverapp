@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema base do sistema. As cores reais vêm do Compose (ui/Tema.kt). -->
+    <style name="Theme.DriverApp" parent="android:Theme.Material.NoActionBar" />
+</resources>
