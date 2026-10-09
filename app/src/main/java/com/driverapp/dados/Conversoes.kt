@@ -119,3 +119,14 @@ fun Jornada.paraEntidade() = JornadaEntity(
     metrosNaPausa = metrosNaPausa,
     finalizadaEm = finalizadaEm,
 )
+
+// ---------- Saldos ----------
+
+fun SaldoEntity.paraInstantaneo() = com.driverapp.calculo.Instantaneo(
+    plataforma = plataforma,
+    semanal = semanal,
+    periodoInicio = periodoInicio,
+    valor = valor,
+    corridas = corridas,
+    lidoEm = lidoEm,
+)

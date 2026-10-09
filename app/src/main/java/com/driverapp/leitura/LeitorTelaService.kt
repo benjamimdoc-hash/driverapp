@@ -24,6 +24,7 @@ class LeitorTelaService : AccessibilityService() {
 
     private val escopo = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var processador: ProcessadorOfertas
+    private lateinit var processadorSaldo: ProcessadorSaldo
     private var cartao: CartaoFlutuante? = null
     private var pacotes: Map<String, Plataforma> = emptyMap()
     private var ultimoProcessamentoMs = 0L
@@ -32,6 +33,7 @@ class LeitorTelaService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         processador = ProcessadorOfertas(applicationContext)
+        processadorSaldo = ProcessadorSaldo(applicationContext)
         cartao = CartaoFlutuante(this)
         pacotes = EstadoLeitura.pacotes(this)
         // "Mostrar card de teste" nos Ajustes: usa o print de referência da Uber com os custos reais.
@@ -70,8 +72,14 @@ class LeitorTelaService : AccessibilityService() {
         val linhas = coletarTextos(pacote)
         if (linhas.isEmpty()) return
         escopo.launch {
-            val resultado = processador.processar(plataforma, linhas, System.currentTimeMillis()) ?: return@launch
-            if (resultado.leitura.utilizavel) cartao?.mostrar(resultado)
+            val agoraMs = System.currentTimeMillis()
+            val resultado = processador.processar(plataforma, linhas, agoraMs)
+            if (resultado != null) {
+                if (resultado.leitura.utilizavel) cartao?.mostrar(resultado)
+                return@launch
+            }
+            // Não é oferta: pode ser a tela de saldo/ganhos da plataforma.
+            processadorSaldo.processar(plataforma, linhas, agoraMs)
         }
     }
 

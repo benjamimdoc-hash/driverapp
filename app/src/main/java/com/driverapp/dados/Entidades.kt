@@ -128,6 +128,37 @@ data class OfertaEntity(
     val vistaEm: Long,
 )
 
+/**
+ * Histórico das leituras de saldo das plataformas (versão 3).
+ * Cada leitura aceita SUBSTITUI a anterior do mesmo período (nunca soma). Nada é apagado:
+ * correções manuais e descartes ficam registrados.
+ */
+@Entity(tableName = "saldo", indices = [Index(value = ["plataforma", "periodoInicio"])])
+data class SaldoEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val plataforma: String,
+    /** true = total da semana (99); false = total do dia (Uber). */
+    val semanal: Boolean,
+    val periodoInicio: Long,
+    val valor: Double?,
+    val corridas: Int?,
+    val ultimaCorrida: Double?,
+    val lidoEm: Long,
+    /** ACEITO, PENDENTE ou DESCARTADO. */
+    val estado: String,
+    /** LEITURA (da tela) ou MANUAL (correção do motorista). */
+    val origem: String,
+    /** Por que ficou pendente / observação da correção. */
+    val motivo: String?,
+)
+
+/** Resultado de consulta: quantidade e soma de corridas manuais por plataforma num período. */
+data class TotalPlataforma(
+    val plataforma: String,
+    val quantidade: Int,
+    val total: Double,
+)
+
 /** Resultado de consulta: quantidade e soma de corridas num período. */
 data class TotalPeriodo(
     val quantidade: Int,

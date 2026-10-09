@@ -42,6 +42,8 @@ import com.driverapp.dados.OfertaEntity
 import com.driverapp.leitores.Interpretador
 import com.driverapp.leitores.Leitor99
 import com.driverapp.leitores.LeitorUber
+import com.driverapp.leitores.LeitorSaldo
+import com.driverapp.leitores.PeriodoSaldo
 import com.driverapp.leitores.Plataforma
 import com.driverapp.leitura.EstadoLeitura
 import com.driverapp.leitura.ExemplosReferencia
@@ -86,6 +88,8 @@ fun TelaLeitura(config: ConfiguracaoEntity, aoVoltar: () -> Unit) {
 
     var testes by remember { mutableStateOf<List<ResultadoAnalise>>(emptyList()) }
     var testeImagem by remember { mutableStateOf<ResultadoAnalise?>(null) }
+    var testeSaldo by remember { mutableStateOf<String?>(null) }
+    val historicoSaldos by remember { repo.historicoSaldos(20) }.collectAsStateWithLifecycle(initialValue = emptyList())
     var avisoImagem by remember { mutableStateOf<String?>(null) }
 
     val escolherImagem = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -96,8 +100,15 @@ fun TelaLeitura(config: ConfiguracaoEntity, aoVoltar: () -> Unit) {
             try {
                 val linhas = LeituraDeImagem.linhas(contexto, uri)
                 val melhor = ExemplosReferencia.melhorLeitura(linhas)
-                if (melhor == null) {
-                    avisoImagem = "Não encontrei uma oferta nesta imagem (${linhas.size} linhas de texto lidas)."
+                val saldo = if (melhor == null) {
+                    listOf(Plataforma.UBER, Plataforma.NOVENTA_E_NOVE).firstNotNullOfOrNull { LeitorSaldo.ler(it, linhas) }
+                } else null
+                if (melhor == null && saldo != null) {
+                    testeSaldo = "Tela de saldo da ${saldo.plataforma.nome}: ${Formatos.moeda(saldo.valor)} • " +
+                        "${saldo.corridas ?: "—"} corrida(s) (${if (saldo.periodo == PeriodoSaldo.DIA) "hoje" else "semana"})"
+                    avisoImagem = "${linhas.size} linhas de texto lidas na imagem (teste: nada foi salvo)."
+                } else if (melhor == null) {
+                    avisoImagem = "Não encontrei uma oferta nem uma tela de saldo nesta imagem (${linhas.size} linhas lidas)."
                 } else {
                     testeImagem = ProcessadorOfertas.analisarComCadastro(contexto, Interpretador.validar(melhor.second))
                     avisoImagem = "${linhas.size} linhas de texto lidas na imagem."
@@ -174,6 +185,18 @@ fun TelaLeitura(config: ConfiguracaoEntity, aoVoltar: () -> Unit) {
         })
         testes.forEach { CartaoAnalise(it) }
 
+        BotaoSecundario("Testar leitura das telas de saldo", {
+            testeSaldo = listOfNotNull(
+                LeitorSaldo.ler(Plataforma.UBER, ExemplosReferencia.SALDO_UBER),
+                LeitorSaldo.ler(Plataforma.NOVENTA_E_NOVE, ExemplosReferencia.SALDO_99),
+            ).joinToString("\n") { l ->
+                "${l.plataforma.nome} (${if (l.periodo == PeriodoSaldo.DIA) "hoje" else "semana"}): " +
+                    "${Formatos.moeda(l.valor)} • ${l.corridas ?: "—"} corrida(s)" +
+                    (l.ultimaCorrida?.let { " • última ${Formatos.moeda(it)}" } ?: "")
+            }
+        })
+        testeSaldo?.let { CartaoVidro(Modifier.fillMaxWidth()) { Text(it, color = p.texto) } }
+
         BotaoSecundario("Testar com uma imagem (print)", {
             escolherImagem.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         })
@@ -227,6 +250,41 @@ fun TelaLeitura(config: ConfiguracaoEntity, aoVoltar: () -> Unit) {
         } else {
             registros.forEach { RegistroOferta(it) }
             BotaoSecundario("Apagar registros de leitura", { escopo.launch { repo.apagarRegistroOfertas() } })
+        }
+        Text("Histórico de saldos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, color = p.texto)
+        if (historicoSaldos.isEmpty()) {
+            Text(
+                "Nenhum saldo lido ainda. Abra a tela inicial da Uber ou o Painel da 99 com a leitura ativa.",
+                style = MaterialTheme.typography.bodySmall, color = p.textoSecundario,
+            )
+        }
+        historicoSaldos.forEach { s ->
+            val cor = when (s.estado) {
+                "ACEITO" -> p.verde
+                "PENDENTE" -> p.amarelo
+                else -> p.neutro
+            }
+            CartaoVidro(Modifier.fillMaxWidth(), preenchimento = 12.dp) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "${Plataforma.entries.firstOrNull { it.name == s.plataforma }?.nome ?: s.plataforma} • " +
+                                "${Formatos.moeda(s.valor)} • ${s.corridas ?: "—"} corrida(s)",
+                            fontWeight = FontWeight.SemiBold, color = p.texto,
+                        )
+                        Text(
+                            HORA.format(Instant.ofEpochMilli(s.lidoEm).atZone(ZoneId.systemDefault())) +
+                                " • ${if (s.semanal) "semana" else "dia"} • ${if (s.origem == "MANUAL") "correção manual" else "lido da tela"}",
+                            style = MaterialTheme.typography.bodySmall, color = p.textoSecundario,
+                        )
+                        s.motivo?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = p.textoSecundario) }
+                    }
+                    Pilula(
+                        when (s.estado) { "ACEITO" -> "Aceito"; "PENDENTE" -> "Pendente"; else -> "Descartado" },
+                        cor,
+                    )
+                }
+            }
         }
         BotaoSecundario("Voltar", aoVoltar)
     }

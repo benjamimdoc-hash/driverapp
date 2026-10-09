@@ -21,6 +21,17 @@ object ExemplosReferencia {
         "5 min (1,4 km)", "Rua João Esteves Robalo, 21, Jardim Míriam", "Aceitar por R$6,86",
     )
 
+    /** Tela inicial da Uber (total do dia). */
+    val SALDO_UBER = listOf(
+        "R$ 55,23", "HOJE", "5", "viagens concluídas", "5 pontos", "VER RESUMO SEMANAL", "Você está offline",
+    )
+
+    /** Painel da 99 (total da semana). */
+    val SALDO_99 = listOf(
+        "R$92,69", "Painel", "R$7,60", "Valor da última corrida", "24.85%", "Taxa99 (esta semana)",
+        "R$92,69", "Ganhos desta semana", "R$10,30", "/ (solicitação) semana", "9", "Solicitações",
+    )
+
     /**
      * Para uma imagem de origem desconhecida: tenta os dois leitores e fica com o que
      * reconheceu mais campos. Empate favorece a plataforma com categoria reconhecida.

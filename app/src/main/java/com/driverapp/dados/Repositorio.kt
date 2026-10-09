@@ -133,10 +133,26 @@ class Repositorio(private val db: BancoDados) {
 
     suspend fun apagarRegistroOfertas() = db.ofertas().apagarTudo()
 
+    // ---------- Saldos das plataformas ----------
+
+    fun saldosAceitosDesde(desde: Long): Flow<List<SaldoEntity>> = db.saldos().observarAceitosDesde(desde)
+    val saldosPendentes: Flow<List<SaldoEntity>> = db.saldos().observarPendentes()
+    fun historicoSaldos(limite: Int = 40): Flow<List<SaldoEntity>> = db.saldos().observarHistorico(limite)
+    fun corridasPorPlataforma(inicio: Long, fim: Long): Flow<List<TotalPlataforma>> = db.corridas().observarPorPlataforma(inicio, fim)
+
+    suspend fun ultimoSaldoAceito(plataforma: String, semanal: Boolean, periodoInicio: Long): SaldoEntity? =
+        db.saldos().ultimoAceito(plataforma, semanal, periodoInicio)
+
+    suspend fun ultimoSaldoPendente(plataforma: String): SaldoEntity? = db.saldos().ultimoPendente(plataforma)
+    suspend fun inserirSaldo(s: SaldoEntity): Long = db.saldos().inserir(s)
+    suspend fun confirmarSaldo(id: Long) = db.saldos().mudarEstado(id, "ACEITO")
+    suspend fun descartarSaldo(id: Long) = db.saldos().mudarEstado(id, "DESCARTADO")
+
     // ---------- Privacidade ----------
 
     /** Apaga TODOS os dados do motorista neste celular. */
     suspend fun apagarTudo() {
+        db.saldos().apagarTudo()
         db.ofertas().apagarTudo()
         db.limites().apagarTudo()
         db.corridas().apagarTudo()

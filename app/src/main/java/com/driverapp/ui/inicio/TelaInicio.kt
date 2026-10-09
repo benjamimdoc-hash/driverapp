@@ -56,7 +56,9 @@ import com.driverapp.calculo.ResumoDePeriodo
 import com.driverapp.calculo.Ritmo
 import com.driverapp.dados.ConfiguracaoEntity
 import com.driverapp.dados.CorridaEntity
-import com.driverapp.dados.TotalPeriodo
+import com.driverapp.dados.paraInstantaneo
+import com.driverapp.calculo.ManualPlataforma
+import com.driverapp.calculo.TotaisCombinados
 import com.driverapp.dados.criteriosPara
 import com.driverapp.dados.custoCombustivelPorKm
 import com.driverapp.dados.custoFixoPorHora
@@ -119,10 +121,24 @@ fun TelaInicio(config: ConfiguracaoEntity) {
     val limites by repo.limites.collectAsStateWithLifecycle(initialValue = emptyList())
     val jornadasPeriodo by remember(intervalo) { repo.jornadasNoPeriodo(intervalo.inicioMs, intervalo.fimMs) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val totalPeriodo by remember(intervalo) { repo.totalPeriodo(intervalo.inicioMs, intervalo.fimMs) }
-        .collectAsStateWithLifecycle(initialValue = TotalPeriodo(0, 0.0))
-    val totalSemana by remember(semana) { repo.totalPeriodo(semana.inicioMs, semana.fimMs) }
-        .collectAsStateWithLifecycle(initialValue = TotalPeriodo(0, 0.0))
+    // Faturamento e corridas: leituras de saldo das plataformas + lançamentos manuais, sem duplicar.
+    val desdeSaldos = minOf(intervalo.inicioMs, semana.inicioMs) - 8 * 24 * 3_600_000L
+    val saldosAceitos by remember(desdeSaldos) { repo.saldosAceitosDesde(desdeSaldos) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val pendentes by repo.saldosPendentes.collectAsStateWithLifecycle(initialValue = emptyList())
+    val manuaisPeriodo by remember(intervalo) { repo.corridasPorPlataforma(intervalo.inicioMs, intervalo.fimMs) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val manuaisSemana by remember(semana) { repo.corridasPorPlataforma(semana.inicioMs, semana.fimMs) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val instantaneos = saldosAceitos.map { it.paraInstantaneo() }
+    val totalPeriodo = TotaisCombinados.combinar(
+        instantaneos, manuaisPeriodo.map { ManualPlataforma(it.plataforma, it.quantidade, it.total) },
+        intervalo.inicioMs, intervalo.fimMs,
+    )
+    val totalSemana = TotaisCombinados.combinar(
+        instantaneos, manuaisSemana.map { ManualPlataforma(it.plataforma, it.quantidade, it.total) },
+        semana.inicioMs, semana.fimMs,
+    )
     val corridasJornada by remember(jornadaEnt?.id) {
         jornadaEnt?.id?.let { repo.corridasDaJornada(it) } ?: flowOf(emptyList())
     }.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -150,7 +166,7 @@ fun TelaInicio(config: ConfiguracaoEntity) {
         fixos += (j.custoFixoHoraUsado ?: fixoHoraAtual) * ms / 3_600_000.0
     }
     val resumo = ResumoDePeriodo.calcular(
-        DadosPeriodo(totalPeriodo.total, totalPeriodo.quantidade, msOnline, km, combustivel, fixos)
+        DadosPeriodo(totalPeriodo.valor, totalPeriodo.corridas, msOnline, km, combustivel, fixos)
     )
     val criterios = criteriosPara(null, null, limites)
 
@@ -281,7 +297,7 @@ fun TelaInicio(config: ConfiguracaoEntity) {
 
         // ---------- Meta semanal ----------
         config.metas()?.let { metas ->
-            val faturado = totalSemana.total
+            val faturado = totalSemana.valor
             val falta = metas.faltaNaSemana(faturado)
             val diasRestantes = Ritmo.diasRestantes(config.listaDias().toSet(), hoje)
             val porDia = Ritmo.porDia(falta, diasRestantes)
@@ -308,6 +324,13 @@ fun TelaInicio(config: ConfiguracaoEntity) {
                 }
             }
         }
+
+        // ---------- Plataformas (saldos lidos + lançamentos) ----------
+        CartaoPlataformas(
+            total = totalPeriodo,
+            pendentes = pendentes,
+            plataformasDoPerfil = config.listaPlataformas(),
+        )
 
         // ---------- Corridas da jornada ----------
         if (corridasJornada.isNotEmpty()) {

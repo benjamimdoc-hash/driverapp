@@ -16,9 +16,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 @Database(
     entities = [
         ConfiguracaoEntity::class, DespesaEntity::class, JornadaEntity::class, CorridaEntity::class,
-        LimiteEntity::class, OfertaEntity::class,
+        LimiteEntity::class, OfertaEntity::class, SaldoEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class BancoDados : RoomDatabase() {
@@ -28,6 +28,7 @@ abstract class BancoDados : RoomDatabase() {
     abstract fun corridas(): CorridaDao
     abstract fun limites(): LimiteDao
     abstract fun ofertas(): OfertaDao
+    abstract fun saldos(): SaldoDao
 
     companion object {
         fun criar(context: Context): BancoDados =
@@ -67,5 +68,18 @@ object Migracoes {
         }
     }
 
-    val todas: Array<Migration> = arrayOf(DE_1_PARA_2)
+    /** Versão 2 → 3: só ACRESCENTA a tabela de histórico de saldos. */
+    val DE_2_PARA_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `saldo` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plataforma` TEXT NOT NULL, `semanal` INTEGER NOT NULL, " +
+                    "`periodoInicio` INTEGER NOT NULL, `valor` REAL, `corridas` INTEGER, `ultimaCorrida` REAL, " +
+                    "`lidoEm` INTEGER NOT NULL, `estado` TEXT NOT NULL, `origem` TEXT NOT NULL, `motivo` TEXT)"
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_saldo_plataforma_periodoInicio` ON `saldo` (`plataforma`, `periodoInicio`)")
+        }
+    }
+
+    val todas: Array<Migration> = arrayOf(DE_1_PARA_2, DE_2_PARA_3)
 }

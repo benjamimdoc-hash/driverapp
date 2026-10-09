@@ -86,6 +86,9 @@ interface CorridaDao {
     @Query("SELECT COUNT(*) AS quantidade, COALESCE(SUM(valor), 0) AS total FROM corrida WHERE criadaEm >= :inicio AND criadaEm < :fim")
     fun observarTotalPeriodo(inicio: Long, fim: Long): Flow<TotalPeriodo>
 
+    @Query("SELECT plataforma, COUNT(*) AS quantidade, COALESCE(SUM(valor), 0) AS total FROM corrida WHERE criadaEm >= :inicio AND criadaEm < :fim GROUP BY plataforma")
+    fun observarPorPlataforma(inicio: Long, fim: Long): Flow<List<TotalPlataforma>>
+
     @Query("SELECT jornadaId, COUNT(*) AS quantidade, COALESCE(SUM(valor), 0) AS total FROM corrida WHERE jornadaId IS NOT NULL GROUP BY jornadaId")
     fun observarTotaisPorJornada(): Flow<List<TotalPorJornada>>
 
@@ -136,5 +139,33 @@ interface OfertaDao {
     suspend fun podar(manter: Int)
 
     @Query("DELETE FROM oferta")
+    suspend fun apagarTudo()
+}
+
+@Dao
+interface SaldoDao {
+    /** Leituras aceitas a partir de uma data (para os totais da dashboard). */
+    @Query("SELECT * FROM saldo WHERE estado = 'ACEITO' AND lidoEm >= :desde ORDER BY lidoEm")
+    fun observarAceitosDesde(desde: Long): Flow<List<SaldoEntity>>
+
+    @Query("SELECT * FROM saldo WHERE estado = 'PENDENTE' ORDER BY lidoEm DESC")
+    fun observarPendentes(): Flow<List<SaldoEntity>>
+
+    @Query("SELECT * FROM saldo ORDER BY lidoEm DESC LIMIT :limite")
+    fun observarHistorico(limite: Int): Flow<List<SaldoEntity>>
+
+    @Query("SELECT * FROM saldo WHERE plataforma = :plataforma AND semanal = :semanal AND periodoInicio = :periodoInicio AND estado = 'ACEITO' ORDER BY lidoEm DESC LIMIT 1")
+    suspend fun ultimoAceito(plataforma: String, semanal: Boolean, periodoInicio: Long): SaldoEntity?
+
+    @Query("SELECT * FROM saldo WHERE plataforma = :plataforma AND estado = 'PENDENTE' ORDER BY lidoEm DESC LIMIT 1")
+    suspend fun ultimoPendente(plataforma: String): SaldoEntity?
+
+    @Insert
+    suspend fun inserir(s: SaldoEntity): Long
+
+    @Query("UPDATE saldo SET estado = :estado WHERE id = :id")
+    suspend fun mudarEstado(id: Long, estado: String)
+
+    @Query("DELETE FROM saldo")
     suspend fun apagarTudo()
 }
