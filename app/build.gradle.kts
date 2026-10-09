@@ -20,6 +20,9 @@ android {
         targetSdk = 35
         versionCode = 3
         versionName = "0.3.0-fase3"
+
+        // Só os processadores de celulares reais (deixa o APK bem menor).
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     // Chave de teste FIXA (fica no repositório). Assim cada APK novo instala por cima

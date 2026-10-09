@@ -20,7 +20,8 @@ Cada versão nova instala **por cima** da anterior (a chave de teste é fixa).
 | `leitores/` | Texto da tela da Uber/99 → dados da oferta | Sim (`./gradlew :leitores:test`) |
 | `app/dados/` | Banco local (Room): configuração, despesas, jornadas, corridas | Não — testar no celular |
 | `app/jornada/` | Serviço de GPS em primeiro plano, notificações, aviso após reiniciar | Não — testar no celular |
-| `app/ui/` | Telas: cadastro, início, histórico, ajustes, calculadora | Não — testar no celular |
+| `app/leitura/` | Serviço de leitura das ofertas, card sobreposto, análise com os custos do cadastro | Parcial (`./gradlew :app:testDebugUnitTest`) |
+| `app/ui/` | Sistema de design (temas), cadastro, painel, histórico, ajustes, leitura, calculadora | Não — testar no celular |
 | `.github/workflows/build.yml` | Compilação automática do APK | — |
 
 ## Regras importantes do projeto
@@ -34,7 +35,8 @@ Cada versão nova instala **por cima** da anterior (a chave de teste é fixa).
 
 - [x] Fase 1 — Estrutura, motor de cálculo, leitores Uber/99, calculadora de teste, APK automático
 - [x] Fase 2 — Cadastro inicial, custos, metas, dashboard, jornada com GPS, histórico
-- [ ] Fase 3 — Leitura automática da tela (Acessibilidade) e classificação
+- [x] Fase 3 — Leitura automática da tela (só leitura, via Acessibilidade), validação, card da corrida, limites por categoria
+  - [ ] Leitura das telas de saldo/carteira (próximo passo)
 - [ ] Fase 4 — Painel flutuante
 - [ ] Fase 5 — Licença por token e mensagens motivacionais
 - [ ] Fase 6 — Modo Segurança, mais plataformas, relatórios
