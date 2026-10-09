@@ -36,7 +36,7 @@ Cada versão nova instala **por cima** da anterior (a chave de teste é fixa).
 - [x] Fase 1 — Estrutura, motor de cálculo, leitores Uber/99, calculadora de teste, APK automático
 - [x] Fase 2 — Cadastro inicial, custos, metas, dashboard, jornada com GPS, histórico
 - [x] Fase 3 — Leitura automática da tela (só leitura, via Acessibilidade), validação, card da corrida, limites por categoria
-  - [ ] Leitura das telas de saldo/carteira (próximo passo)
-- [ ] Fase 4 — Painel flutuante
+  - [x] Leitura das telas de saldo/carteira (Uber: total do dia; 99: total da semana), sem duplicar
+- [x] Fase 4 — Painel flutuante da jornada (ícone arrastável, opacidade, controles da jornada)
 - [ ] Fase 5 — Licença por token e mensagens motivacionais
 - [ ] Fase 6 — Modo Segurança, mais plataformas, relatórios

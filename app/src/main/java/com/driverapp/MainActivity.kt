@@ -22,4 +22,15 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // O painel flutuante da jornada se esconde enquanto o app está na tela.
+    override fun onResume() {
+        super.onResume()
+        com.driverapp.jornada.EstadoApp.visivel.value = true
+    }
+
+    override fun onPause() {
+        com.driverapp.jornada.EstadoApp.visivel.value = false
+        super.onPause()
+    }
 }

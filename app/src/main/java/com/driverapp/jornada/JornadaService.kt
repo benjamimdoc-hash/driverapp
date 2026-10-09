@@ -28,7 +28,18 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import com.driverapp.MainActivity
+import com.driverapp.calculo.ManualPlataforma
+import com.driverapp.calculo.TotaisCombinados
+import com.driverapp.dados.custoFixoPorHora
+import com.driverapp.dados.paraInstantaneo
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -53,6 +64,11 @@ class JornadaService : Service() {
     private var ultimoSinalMs = 0L
     private var gpsLigadoEmMs = 0L
     private var ultimaJornada: JornadaEntity? = null
+
+    // Fase 4: painel flutuante da jornada.
+    private var painel: PainelFlutuante? = null
+    private var observadorPainel: Job? = null
+    private var relogioPainel: Job? = null
 
     private val ouvinte = LocationListener { local -> aoReceberLocal(local) }
 
@@ -80,7 +96,76 @@ class JornadaService : Service() {
                 }
             }
         }
+        if (observadorPainel == null) {
+            painel = PainelFlutuante(this, acoesPainel)
+            observadorPainel = escopo.launch {
+                fluxoPainel().collect { (dados, appVisivel) -> painel?.atualizar(dados, appVisivel) }
+            }
+            relogioPainel = escopo.launch {
+                while (isActive) {
+                    delay(1_000)
+                    painel?.tique()
+                }
+            }
+        }
         return START_STICKY
+    }
+
+    /** Junta tudo o que o painel mostra: jornada, cadastro, custos, corridas e o faturado de hoje. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun fluxoPainel(): Flow<Pair<DadosPainel?, Boolean>> {
+        val repo = repositorio
+        val zona = ZoneId.systemDefault()
+        val inicioDia = LocalDate.now(zona).atStartOfDay(zona).toInstant().toEpochMilli()
+        val fimDia = inicioDia + 24 * 3_600_000L
+        val corridas = repo.jornadaAtual.flatMapLatest { j ->
+            if (j == null) flowOf(emptyList()) else repo.corridasDaJornada(j.id)
+        }
+        val faturadoHoje = combine(
+            repo.saldosAceitosDesde(inicioDia - 8 * 24 * 3_600_000L),
+            repo.corridasPorPlataforma(inicioDia, fimDia),
+        ) { saldos, manuais ->
+            TotaisCombinados.combinar(
+                saldos.map { it.paraInstantaneo() },
+                manuais.map { ManualPlataforma(it.plataforma, it.quantidade, it.total) },
+                inicioDia, fimDia,
+            ).valor
+        }
+        val dados = combine(repo.jornadaAtual, repo.config, repo.despesas, corridas, faturadoHoje) { j, c, d, cs, hoje ->
+            j?.let { DadosPainel(it, c, c.custoFixoPorHora(d), cs.sumOf { x -> x.valor }, cs.size, hoje) }
+        }
+        return combine(dados, EstadoApp.visivel, PreferenciasPainel.mudou) { d, visivel, _ -> d to visivel }
+    }
+
+    private val acoesPainel = object : AcoesPainel {
+        override fun pausar() { escopo.launch { repositorio.pausar(System.currentTimeMillis()) } }
+        override fun retomar() { escopo.launch { repositorio.retomar(System.currentTimeMillis()) } }
+        override fun finalizar() { escopo.launch { repositorio.finalizar(System.currentTimeMillis()) } }
+
+        override fun abrirApp() {
+            try {
+                startActivity(
+                    Intent(this@JornadaService, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                )
+            } catch (_: Exception) {
+            }
+        }
+
+        override fun ajustarCombustivel(deltaPreco: Double, deltaConsumo: Double) {
+            escopo.launch {
+                repositorio.alterarConfig { c ->
+                    c.copy(
+                        precoLitro = if (deltaPreco != 0.0) {
+                            Math.round(((c.precoLitro ?: 0.0) + deltaPreco).coerceAtLeast(0.0) * 100) / 100.0
+                        } else c.precoLitro,
+                        kmPorLitro = if (deltaConsumo != 0.0) {
+                            ((c.kmPorLitro ?: 8.0) + deltaConsumo).coerceIn(1.0, 40.0)
+                        } else c.kmPorLitro,
+                    )
+                }
+            }
+        }
     }
 
     private fun entrarEmPrimeiroPlano(): Boolean = try {
@@ -169,12 +254,14 @@ class JornadaService : Service() {
     }
 
     private fun encerrar() {
+        painel?.remover()
         desligarGps()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
     override fun onDestroy() {
+        painel?.remover()
         desligarGps()
         escopo.cancel()
         super.onDestroy()

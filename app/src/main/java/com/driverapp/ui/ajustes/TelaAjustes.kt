@@ -101,6 +101,7 @@ fun TelaAjustes(config: ConfiguracaoEntity) {
         "limites" -> { TelaLimites(config) { aberta = null }; return }
         "leitura" -> { TelaLeitura(config) { aberta = null }; return }
         "card" -> { TelaCardFlutuante { aberta = null }; return }
+        "painel" -> { TelaPainelFlutuante { aberta = null }; return }
         "calculadora" -> { TelaCalculadora(config); return }
     }
 
@@ -171,6 +172,7 @@ fun TelaAjustes(config: ConfiguracaoEntity) {
                 )
             }
         }
+        Item("Painel flutuante", "Controle da jornada por cima dos outros apps") { aberta = "painel" }
         Item("Funcionar com a tela apagada", "Liberar o app na economia de bateria") { aberta = "bateria" }
 
         Secao("Ferramentas")

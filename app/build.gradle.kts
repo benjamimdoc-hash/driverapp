@@ -18,8 +18,8 @@ android {
         applicationId = "com.driverapp"
         minSdk = 31          // Android 12 ou superior
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0-fase3"
+        versionCode = 4
+        versionName = "0.4.0-fase4"
 
         // Só os processadores de celulares reais (deixa o APK bem menor).
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
