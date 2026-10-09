@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Banco local (SQLite via Room).
@@ -12,8 +14,11 @@ import androidx.room.RoomDatabase
  * e escreva uma migração em [Migracoes] — nunca apague o banco do motorista.
  */
 @Database(
-    entities = [ConfiguracaoEntity::class, DespesaEntity::class, JornadaEntity::class, CorridaEntity::class],
-    version = 1,
+    entities = [
+        ConfiguracaoEntity::class, DespesaEntity::class, JornadaEntity::class, CorridaEntity::class,
+        LimiteEntity::class, OfertaEntity::class,
+    ],
+    version = 2,
     exportSchema = true,
 )
 abstract class BancoDados : RoomDatabase() {
@@ -21,6 +26,8 @@ abstract class BancoDados : RoomDatabase() {
     abstract fun despesas(): DespesaDao
     abstract fun jornadas(): JornadaDao
     abstract fun corridas(): CorridaDao
+    abstract fun limites(): LimiteDao
+    abstract fun ofertas(): OfertaDao
 
     companion object {
         fun criar(context: Context): BancoDados =
@@ -30,7 +37,35 @@ abstract class BancoDados : RoomDatabase() {
     }
 }
 
-/** Migrações entre versões do banco. Vazio na versão 1. */
 object Migracoes {
-    val todas: Array<androidx.room.migration.Migration> = emptyArray()
+    /**
+     * Versão 1 → 2: só ACRESCENTA colunas (todas opcionais) e tabelas novas.
+     * Nenhum dado existente é apagado ou alterado.
+     */
+    val DE_1_PARA_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `configuracao` ADD COLUMN `tema` TEXT")
+            db.execSQL("ALTER TABLE `configuracao` ADD COLUMN `horaInicio` TEXT")
+            db.execSQL("ALTER TABLE `configuracao` ADD COLUMN `horaFim` TEXT")
+            db.execSQL("ALTER TABLE `configuracao` ADD COLUMN `kmPorDia` REAL")
+            db.execSQL("ALTER TABLE `despesa` ADD COLUMN `prazoMeses` INTEGER")
+            db.execSQL("ALTER TABLE `despesa` ADD COLUMN `observacao` TEXT")
+            db.execSQL("ALTER TABLE `corrida` ADD COLUMN `categoria` TEXT")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `limite` (" +
+                    "`chave` TEXT NOT NULL, `kmMinimo` REAL NOT NULL, `kmBom` REAL NOT NULL, " +
+                    "`horaMinimo` REAL NOT NULL, `horaBom` REAL NOT NULL, PRIMARY KEY(`chave`))"
+            )
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `oferta` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `plataforma` TEXT NOT NULL, `valor` REAL, " +
+                    "`minColeta` REAL, `kmColeta` REAL, `minViagem` REAL, `kmViagem` REAL, `categoria` TEXT, " +
+                    "`nota` REAL, `confianca` TEXT NOT NULL, `alertas` TEXT NOT NULL, `textoAnonimo` TEXT NOT NULL, " +
+                    "`vistaEm` INTEGER NOT NULL)"
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_oferta_vistaEm` ON `oferta` (`vistaEm`)")
+        }
+    }
+
+    val todas: Array<Migration> = arrayOf(DE_1_PARA_2)
 }

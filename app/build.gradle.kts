@@ -18,8 +18,8 @@ android {
         applicationId = "com.driverapp"
         minSdk = 31          // Android 12 ou superior
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0-fase2"
+        versionCode = 3
+        versionName = "0.3.0-fase3"
     }
 
     // Chave de teste FIXA (fica no repositório). Assim cada APK novo instala por cima
@@ -71,4 +71,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Leitura de texto em imagens, 100% no celular (usado só no "testar com uma imagem").
+    implementation(libs.mlkit.texto)
+
+    testImplementation(libs.junit)
 }

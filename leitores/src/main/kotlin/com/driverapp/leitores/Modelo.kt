@@ -30,3 +30,25 @@ data class OfertaLida(
     /** Tem o mínimo para calcular: valor e ao menos a viagem. */
     val completa: Boolean get() = valor != null && viagem != null
 }
+
+/**
+ * Nome padronizado da categoria, para os limites de classificação não dependerem
+ * de como a tela escreveu ("Uber Black" e "Black" são a mesma categoria).
+ */
+object Categorias {
+    val uber = listOf("UberX", "Comfort", "Black", "Flash", "Moto", "Priority", "Juntos", "XL")
+    val noventaENove = listOf("Pop", "Negocia", "Comfort", "Top", "Taxi", "Moto")
+
+    fun canonica(categoria: String?): String? {
+        val c = categoria?.trim() ?: return null
+        if (c.equals("UberX", ignoreCase = true)) return "UberX"
+        val semPrefixo = c.removePrefix("Uber ").removePrefix("uber ").removePrefix("99").trim()
+        val todas = uber + noventaENove
+        return todas.firstOrNull { it.equals(semPrefixo, ignoreCase = true) } ?: semPrefixo
+    }
+
+    fun daPlataforma(p: Plataforma): List<String> = when (p) {
+        Plataforma.UBER -> uber
+        Plataforma.NOVENTA_E_NOVE -> noventaENove
+    }
+}

@@ -26,6 +26,8 @@ import com.driverapp.calculo.Financeiro
 import com.driverapp.dados.paraDominio
 import com.driverapp.repositorio
 import com.driverapp.ui.Formatos
+import com.driverapp.ui.LocalPaleta
+import com.driverapp.ui.componentes.CartaoVidro
 import com.driverapp.ui.inicio.DialogoResumo
 import java.time.Instant
 import java.time.ZoneId
@@ -43,7 +45,7 @@ fun TelaHistorico() {
 
     if (jornadas.isEmpty()) {
         Column(Modifier.padding(24.dp)) {
-            Text("Histórico", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("Histórico", style = MaterialTheme.typography.headlineSmall, color = LocalPaleta.current.texto)
             Text(
                 "Nenhuma jornada finalizada ainda. Quando você finalizar uma jornada, ela aparece aqui.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -53,7 +55,7 @@ fun TelaHistorico() {
     } else {
         val porJornada = totais.associateBy { it.jornadaId }
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            item { Text("Histórico", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
+            item { Text("Histórico", style = MaterialTheme.typography.headlineSmall, color = LocalPaleta.current.texto) }
             items(jornadas, key = { it.id }) { j ->
                 val d = j.paraDominio()
                 val ms = d.msProdutivos(j.finalizadaEm ?: j.inicioEm)
@@ -65,11 +67,8 @@ fun TelaHistorico() {
                     custoCombustivelPorKm = j.custoKmUsado,
                     custoFixoPorHora = j.custoFixoHoraUsado ?: 0.0,
                 )
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().clickable { aberta = j.id },
-                ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                CartaoVidro(Modifier.fillMaxWidth().clickable { aberta = j.id }, preenchimento = 16.dp) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             FORMATO_DATA.format(Instant.ofEpochMilli(j.inicioEm).atZone(ZoneId.systemDefault())),
                             style = MaterialTheme.typography.labelLarge,
@@ -82,6 +81,7 @@ fun TelaHistorico() {
                         Text(
                             "Bruto ${Formatos.moeda(r.faturamentoBruto)}  •  Resultado ${Formatos.moeda(r.resultadoEstimado)}",
                             fontWeight = FontWeight.SemiBold,
+                            color = LocalPaleta.current.texto,
                         )
                     }
                 }

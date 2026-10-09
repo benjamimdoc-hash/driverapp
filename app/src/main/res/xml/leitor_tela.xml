@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuração do serviço de leitura das ofertas.
+  - Só LÊ conteúdo (canRetrieveWindowContent). Não declara gestos: o app não consegue tocar na tela.
+  - Eventos de apps que não são Uber/99 são descartados no código, sem ler o conteúdo.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/descricao_leitor"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="150" />

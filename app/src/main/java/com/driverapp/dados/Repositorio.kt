@@ -29,8 +29,25 @@ class Repositorio(private val db: BancoDados) {
 
     val despesas: Flow<List<DespesaEntity>> = db.despesas().observar()
 
-    suspend fun adicionarDespesa(d: DespesaEntity) { db.despesas().inserir(d) }
+    suspend fun despesasAtuais(): List<DespesaEntity> = db.despesas().listar()
+    suspend fun adicionarDespesa(d: DespesaEntity): Long = db.despesas().inserir(d)
     suspend fun excluirDespesa(id: Long) = db.despesas().excluir(id)
+
+    /**
+     * Salvamento automático de uma despesa (etapa de custos adicionais).
+     *  - id = 0: cria; id > 0: atualiza a mesma linha (nunca duplica).
+     *  - valor vazio ou zero: remove a despesa.
+     * Retorna o id da linha (0 se foi removida).
+     */
+    suspend fun salvarDespesa(d: DespesaEntity): Long {
+        if (d.valor <= 0) {
+            if (d.id > 0) db.despesas().excluir(d.id)
+            return 0
+        }
+        if (d.id == 0L) return db.despesas().inserir(d)
+        db.despesas().salvar(d)
+        return d.id
+    }
 
     // ---------- Jornada ----------
 
@@ -38,6 +55,8 @@ class Repositorio(private val db: BancoDados) {
     val jornadasFinalizadas: Flow<List<JornadaEntity>> = db.jornadas().observarFinalizadas()
 
     suspend fun obterJornadaAtual(): JornadaEntity? = db.jornadas().obterAtual()
+
+    fun jornadasNoPeriodo(inicio: Long, fim: Long): Flow<List<JornadaEntity>> = db.jornadas().observarNoPeriodo(inicio, fim)
 
     suspend fun iniciarJornada(agora: Long): Long = travaJornada.withLock {
         db.jornadas().obterAtual()?.let { return@withLock it.id } // já existe uma em andamento
@@ -84,16 +103,42 @@ class Repositorio(private val db: BancoDados) {
 
     fun corridasDaJornada(jornadaId: Long): Flow<List<CorridaEntity>> = db.corridas().observarDaJornada(jornadaId)
     fun faturadoDesde(desde: Long): Flow<Double> = db.corridas().observarFaturadoDesde(desde)
+    fun totalPeriodo(inicio: Long, fim: Long): Flow<TotalPeriodo> = db.corridas().observarTotalPeriodo(inicio, fim)
     val totaisPorJornada: Flow<List<TotalPorJornada>> = db.corridas().observarTotaisPorJornada()
     suspend fun totalDaJornada(id: Long): TotalPorJornada? = db.corridas().totalDaJornada(id)
 
     suspend fun adicionarCorrida(c: CorridaEntity) { db.corridas().inserir(c) }
     suspend fun excluirCorrida(id: Long) = db.corridas().excluir(id)
 
+    // ---------- Limites de classificação ----------
+
+    val limites: Flow<List<LimiteEntity>> = db.limites().observar()
+    suspend fun listarLimites(): List<LimiteEntity> = db.limites().listar()
+    suspend fun salvarLimite(l: LimiteEntity) = db.limites().salvar(l)
+    suspend fun excluirLimite(chave: String) = db.limites().excluir(chave)
+
+    // ---------- Registro de ofertas lidas ----------
+
+    fun ofertasRecentes(limite: Int = 30): Flow<List<OfertaEntity>> = db.ofertas().observarRecentes(limite)
+
+    /** Grava (ou atualiza, quando é a mesma oferta) e mantém só os 200 registros mais recentes. */
+    suspend fun registrarOferta(o: OfertaEntity): Long {
+        val id = if (o.id > 0) {
+            db.ofertas().atualizar(o)
+            o.id
+        } else db.ofertas().inserir(o)
+        db.ofertas().podar(200)
+        return id
+    }
+
+    suspend fun apagarRegistroOfertas() = db.ofertas().apagarTudo()
+
     // ---------- Privacidade ----------
 
     /** Apaga TODOS os dados do motorista neste celular. */
     suspend fun apagarTudo() {
+        db.ofertas().apagarTudo()
+        db.limites().apagarTudo()
         db.corridas().apagarTudo()
         db.jornadas().apagarTudo()
         db.despesas().apagarTudo()

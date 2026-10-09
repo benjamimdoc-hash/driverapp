@@ -9,6 +9,7 @@ activityCompose = "1.9.3"
 composeBom = "2024.12.01"
 room = "2.6.1"
 junit = "4.13.2"
+mlkitTexto = "16.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -25,6 +26,7 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+mlkit-texto = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTexto" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

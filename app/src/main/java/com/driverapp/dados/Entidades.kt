@@ -34,6 +34,14 @@ data class ConfiguracaoEntity(
     val cadastroConcluido: Boolean = false,
     /** Se os km rodados durante a pausa também contam. Padrão: não. */
     val contarKmNaPausa: Boolean = false,
+    // ---- Versão 2 do banco (colunas novas são opcionais, para a migração ser segura) ----
+    /** ESCURO, CLARO ou null = seguir o sistema. */
+    val tema: String? = null,
+    /** Horário habitual, "HH:MM" (opcional). */
+    val horaInicio: String? = null,
+    val horaFim: String? = null,
+    /** Km rodados por dia, em média (opcional; permite calcular custo fixo por km). */
+    val kmPorDia: Double? = null,
 )
 
 @Entity(tableName = "despesa")
@@ -45,6 +53,10 @@ data class DespesaEntity(
     val valor: Double,
     /** Nome de [com.driverapp.calculo.Periodicidade]. */
     val periodicidade: String,
+    // ---- Versão 2 ----
+    /** Para VALOR_UNICO: em quantos meses distribuir. */
+    val prazoMeses: Int? = null,
+    val observacao: String? = null,
 )
 
 @Entity(tableName = "jornada", indices = [Index("estado")])
@@ -75,6 +87,51 @@ data class CorridaEntity(
     val criadaEm: Long,
     /** MANUAL (lançada pelo motorista) ou AUTOMATICA (lida da tela, Fase 3). */
     val origem: String = "MANUAL",
+    // ---- Versão 2 ----
+    val categoria: String? = null,
+)
+
+/**
+ * Limites de classificação configurados pelo motorista (versão 2).
+ * chave = "padrao" ou "PLATAFORMA:Categoria" (ex.: "UBER:UberX").
+ */
+@Entity(tableName = "limite")
+data class LimiteEntity(
+    @PrimaryKey val chave: String,
+    val kmMinimo: Double,
+    val kmBom: Double,
+    val horaMinimo: Double,
+    val horaBom: Double,
+)
+
+/**
+ * Registro das ofertas lidas da tela (versão 2), para o motorista conferir a leitura.
+ * Não guarda endereços nem nomes: o texto passa pelo Anonimizador antes.
+ */
+@Entity(tableName = "oferta", indices = [Index("vistaEm")])
+data class OfertaEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val plataforma: String,
+    val valor: Double?,
+    val minColeta: Double?,
+    val kmColeta: Double?,
+    val minViagem: Double?,
+    val kmViagem: Double?,
+    val categoria: String?,
+    val nota: Double?,
+    /** ALTA ou BAIXA. */
+    val confianca: String,
+    /** Motivos da baixa confiança, separados por " | ". */
+    val alertas: String,
+    /** Texto da tela já sem dados pessoais, uma linha por item. */
+    val textoAnonimo: String,
+    val vistaEm: Long,
+)
+
+/** Resultado de consulta: quantidade e soma de corridas num período. */
+data class TotalPeriodo(
+    val quantidade: Int,
+    val total: Double,
 )
 
 /** Resultado de consulta: totais de corridas por jornada (para o histórico). */

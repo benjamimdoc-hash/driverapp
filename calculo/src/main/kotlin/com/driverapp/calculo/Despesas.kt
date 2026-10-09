@@ -12,10 +12,12 @@ package com.driverapp.calculo
  *  - SEMANAL:  valor ÷ dias trabalhados por semana.
  *  - MENSAL:   valor ÷ (dias por semana × 52/12 semanas por mês).
  *  - ANUAL:    valor ÷ (dias por semana × 52 semanas).
+ *  - VALOR_UNICO: gasto pontual (ex.: troca de pneus) distribuído pelo prazo em meses
+ *    informado (padrão 12) e depois tratado como mensal.
  *
  * O combustível NÃO entra aqui: ele é custo variável (por km), ver [Combustivel].
  */
-enum class Periodicidade { POR_DIA_TRABALHADO, SEMANAL, MENSAL, ANUAL }
+enum class Periodicidade { POR_DIA_TRABALHADO, SEMANAL, MENSAL, ANUAL, VALOR_UNICO }
 
 enum class CategoriaDespesa {
     PARCELA_VEICULO, ALUGUEL_VEICULO, IPVA, SEGURO, MANUTENCAO, PNEUS,
@@ -28,6 +30,8 @@ data class Despesa(
     val categoria: CategoriaDespesa,
     val valor: Double,
     val periodicidade: Periodicidade,
+    /** Só para VALOR_UNICO: em quantos meses distribuir o valor. */
+    val prazoMeses: Int? = null,
 )
 
 /** Como o motorista organiza a semana de trabalho. */
@@ -51,12 +55,20 @@ data class PlanoDeTrabalho(
 
 object Conversao {
     /** Converte o valor de uma despesa para custo por dia trabalhado. */
-    fun porDiaTrabalhado(valor: Double, periodicidade: Periodicidade, plano: PlanoDeTrabalho): Double =
+    const val PRAZO_PADRAO_MESES = 12
+
+    fun porDiaTrabalhado(
+        valor: Double,
+        periodicidade: Periodicidade,
+        plano: PlanoDeTrabalho,
+        prazoMeses: Int? = null,
+    ): Double =
         when (periodicidade) {
             Periodicidade.POR_DIA_TRABALHADO -> valor
             Periodicidade.SEMANAL -> valor / plano.diasPorSemana
             Periodicidade.MENSAL -> valor / plano.diasPorMes
             Periodicidade.ANUAL -> valor / (plano.diasPorSemana * PlanoDeTrabalho.SEMANAS_POR_ANO)
+            Periodicidade.VALOR_UNICO -> (valor / (prazoMeses ?: PRAZO_PADRAO_MESES).coerceAtLeast(1)) / plano.diasPorMes
         }
 }
 
@@ -66,7 +78,10 @@ data class ResumoCustosFixos(
     val porHoraTrabalhada: Double,
     val porSemana: Double,
     val porMes: Double,
-)
+) {
+    /** Custo fixo por km, se o motorista informar quantos km roda por dia em média. */
+    fun porKm(kmPorDia: Double?): Double? = kmPorDia?.takeIf { it > 0 }?.let { porDiaTrabalhado / it }
+}
 
 object CustosFixos {
     /**
@@ -75,7 +90,7 @@ object CustosFixos {
      */
     fun resumir(despesas: List<Despesa>, plano: PlanoDeTrabalho): ResumoCustosFixos {
         val unicas = despesas.associateBy { it.id }.values
-        val porDia = unicas.sumOf { Conversao.porDiaTrabalhado(it.valor, it.periodicidade, plano) }
+        val porDia = unicas.sumOf { Conversao.porDiaTrabalhado(it.valor, it.periodicidade, plano, it.prazoMeses) }
         return ResumoCustosFixos(
             porDiaTrabalhado = porDia,
             porHoraTrabalhada = porDia / plano.horasPorDia,

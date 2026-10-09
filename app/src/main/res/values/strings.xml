@@ -2,4 +2,6 @@
 <resources>
     <!-- Nome provisório. A identidade visual será definida depois. -->
     <string name="app_name">DriverApp (teste)</string>
+    <string name="nome_leitor">Leitura de ofertas (DriverApp)</string>
+    <string name="descricao_leitor">Lê apenas os textos das ofertas de corrida da Uber e da 99 (valor, tempo, distância, categoria e nota) para mostrar R$/km, R$/hora e o resultado estimado num card por cima da tela. Não toca na tela, não aceita nem recusa corridas e não envia nada para a internet. Endereços e nomes não são guardados.</string>
 </resources>

@@ -33,6 +33,12 @@ interface DespesaDao {
     @Insert
     suspend fun inserir(despesa: DespesaEntity): Long
 
+    @Upsert
+    suspend fun salvar(despesa: DespesaEntity)
+
+    @Query("SELECT * FROM despesa WHERE categoria = :categoria ORDER BY id LIMIT 1")
+    suspend fun porCategoria(categoria: String): DespesaEntity?
+
     @Query("DELETE FROM despesa WHERE id = :id")
     suspend fun excluir(id: Long)
 
@@ -55,6 +61,10 @@ interface JornadaDao {
     @Query("SELECT * FROM jornada WHERE estado = 'FINALIZADA' ORDER BY inicioEm DESC")
     fun observarFinalizadas(): Flow<List<JornadaEntity>>
 
+    /** Jornadas que começaram dentro do período [inicio, fim). */
+    @Query("SELECT * FROM jornada WHERE inicioEm >= :inicio AND inicioEm < :fim")
+    fun observarNoPeriodo(inicio: Long, fim: Long): Flow<List<JornadaEntity>>
+
     @Insert
     suspend fun inserir(jornada: JornadaEntity): Long
 
@@ -73,6 +83,9 @@ interface CorridaDao {
     @Query("SELECT COALESCE(SUM(valor), 0) FROM corrida WHERE criadaEm >= :desde")
     fun observarFaturadoDesde(desde: Long): Flow<Double>
 
+    @Query("SELECT COUNT(*) AS quantidade, COALESCE(SUM(valor), 0) AS total FROM corrida WHERE criadaEm >= :inicio AND criadaEm < :fim")
+    fun observarTotalPeriodo(inicio: Long, fim: Long): Flow<TotalPeriodo>
+
     @Query("SELECT jornadaId, COUNT(*) AS quantidade, COALESCE(SUM(valor), 0) AS total FROM corrida WHERE jornadaId IS NOT NULL GROUP BY jornadaId")
     fun observarTotaisPorJornada(): Flow<List<TotalPorJornada>>
 
@@ -86,5 +99,42 @@ interface CorridaDao {
     suspend fun excluir(id: Long)
 
     @Query("DELETE FROM corrida")
+    suspend fun apagarTudo()
+}
+
+@Dao
+interface LimiteDao {
+    @Query("SELECT * FROM limite")
+    fun observar(): Flow<List<LimiteEntity>>
+
+    @Query("SELECT * FROM limite")
+    suspend fun listar(): List<LimiteEntity>
+
+    @Upsert
+    suspend fun salvar(limite: LimiteEntity)
+
+    @Query("DELETE FROM limite WHERE chave = :chave")
+    suspend fun excluir(chave: String)
+
+    @Query("DELETE FROM limite")
+    suspend fun apagarTudo()
+}
+
+@Dao
+interface OfertaDao {
+    @Query("SELECT * FROM oferta ORDER BY vistaEm DESC LIMIT :limite")
+    fun observarRecentes(limite: Int): Flow<List<OfertaEntity>>
+
+    @Insert
+    suspend fun inserir(oferta: OfertaEntity): Long
+
+    @Update
+    suspend fun atualizar(oferta: OfertaEntity)
+
+    /** Mantém só os registros mais recentes (o resto é apagado). */
+    @Query("DELETE FROM oferta WHERE id NOT IN (SELECT id FROM oferta ORDER BY vistaEm DESC LIMIT :manter)")
+    suspend fun podar(manter: Int)
+
+    @Query("DELETE FROM oferta")
     suspend fun apagarTudo()
 }

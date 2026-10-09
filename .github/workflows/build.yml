@@ -23,8 +23,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Rodar testes (cálculo e leitores)
-        run: ./gradlew :calculo:test :leitores:test --stacktrace
+      - name: Rodar testes (cálculo, leitores e análise)
+        run: ./gradlew :calculo:test :leitores:test :app:testDebugUnitTest --stacktrace
 
       - name: Compilar APK de teste
         run: ./gradlew :app:assembleDebug --stacktrace

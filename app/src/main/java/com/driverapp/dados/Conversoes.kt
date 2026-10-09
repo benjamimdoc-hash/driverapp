@@ -67,7 +67,28 @@ fun DespesaEntity.paraDominio() = Despesa(
     categoria = runCatching { CategoriaDespesa.valueOf(categoria) }.getOrDefault(CategoriaDespesa.OUTRA),
     valor = valor,
     periodicidade = runCatching { Periodicidade.valueOf(periodicidade) }.getOrDefault(Periodicidade.MENSAL),
+    prazoMeses = prazoMeses,
 )
+
+// ---------- Limites de classificação ----------
+
+const val CHAVE_LIMITE_PADRAO = "padrao"
+
+fun chaveLimite(plataforma: String, categoria: String): String = "$plataforma:$categoria"
+
+/**
+ * Critérios para uma corrida: primeiro o limite da categoria (ex.: "UBER:UberX"),
+ * depois o limite padrão do motorista e, se nada foi configurado, a referência inicial sugerida.
+ */
+fun criteriosPara(plataforma: String?, categoria: String?, limites: List<LimiteEntity>): com.driverapp.calculo.CriteriosClassificacao {
+    val porChave = limites.associateBy { it.chave }
+    val especifico = if (plataforma != null && categoria != null) porChave[chaveLimite(plataforma, categoria)] else null
+    val escolhido = especifico ?: porChave[CHAVE_LIMITE_PADRAO]
+    return escolhido?.paraCriterios() ?: com.driverapp.calculo.ReferenciasIniciais.paraCategoria(categoria)
+}
+
+fun LimiteEntity.paraCriterios() =
+    com.driverapp.calculo.CriteriosClassificacao.deLimites(kmMinimo, kmBom, horaMinimo, horaBom)
 
 fun JornadaEntity.paraDominio() = Jornada(
     inicioEm = inicioEm,

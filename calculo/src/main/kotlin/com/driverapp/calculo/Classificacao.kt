@@ -30,7 +30,20 @@ data class Faixas(val razoavel: Double, val boa: Double, val excelente: Double) 
     }
 }
 
-data class CriteriosClassificacao(val porKm: Faixas, val porHora: Faixas)
+data class CriteriosClassificacao(val porKm: Faixas, val porHora: Faixas) {
+    companion object {
+        /**
+         * Monta critérios a partir dos dois limites que o motorista configura por indicador:
+         *  - mínimo: abaixo dele é vermelho;
+         *  - bom: a partir dele é verde. Entre os dois, amarelo.
+         * "Excelente" fica 25% acima do bom.
+         */
+        fun deLimites(kmMinimo: Double, kmBom: Double, horaMinimo: Double, horaBom: Double) = CriteriosClassificacao(
+            porKm = Faixas(kmMinimo, maxOf(kmMinimo, kmBom), maxOf(kmMinimo, kmBom) * 1.25),
+            porHora = Faixas(horaMinimo, maxOf(horaMinimo, horaBom), maxOf(horaMinimo, horaBom) * 1.25),
+        )
+    }
+}
 
 object Classificador {
     /** Null quando não há nem R$/km nem R$/hora para avaliar. */

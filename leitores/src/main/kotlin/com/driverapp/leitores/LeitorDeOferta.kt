@@ -15,12 +15,20 @@ open class LeitorDeOferta(
     private val marcasConhecidas: List<String>,
 ) {
 
-    /** Retorna null quando o texto não parece uma oferta (sem valor ou sem nenhum trecho). */
+    /** Categorias e marcas que este leitor reconhece (usado também para anonimizar registros). */
+    val termosConhecidos: List<String> get() = categoriasConhecidas + marcasConhecidas
+
+    /**
+     * Retorna null quando o texto não parece uma oferta: sem nenhum trecho "X min (Y km)",
+     * que é o que diferencia a tela de oferta das demais telas.
+     * Cada campo é lido de forma independente: se o valor não for encontrado, os trechos,
+     * a categoria e a nota continuam sendo devolvidos (o valor fica null).
+     */
     fun ler(linhas: List<String>): OfertaLida? {
         val texto = linhas.joinToString("\n") { it.trim() }
-        val valor = lerValor(linhas)
         val trechos = lerTrechos(texto)
-        if (valor == null || trechos.isEmpty()) return null
+        if (trechos.isEmpty()) return null
+        val valor = lerValor(linhas)
 
         // Com um trecho só, não dá para saber com segurança se é coleta ou viagem:
         // tratamos como viagem e deixamos a coleta como "não disponível".
