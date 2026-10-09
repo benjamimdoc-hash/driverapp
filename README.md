@@ -18,7 +18,9 @@ Cada versão nova instala **por cima** da anterior (a chave de teste é fixa).
 |---|---|---|
 | `calculo/` | Fórmulas: combustível, despesas, metas, análise de corrida, classificação | Sim (`./gradlew :calculo:test`) |
 | `leitores/` | Texto da tela da Uber/99 → dados da oferta | Sim (`./gradlew :leitores:test`) |
-| `app/` | O aplicativo Android (telas, serviços, permissões) | Não — testar no celular |
+| `app/dados/` | Banco local (Room): configuração, despesas, jornadas, corridas | Não — testar no celular |
+| `app/jornada/` | Serviço de GPS em primeiro plano, notificações, aviso após reiniciar | Não — testar no celular |
+| `app/ui/` | Telas: cadastro, início, histórico, ajustes, calculadora | Não — testar no celular |
 | `.github/workflows/build.yml` | Compilação automática do APK | — |
 
 ## Regras importantes do projeto
@@ -31,7 +33,7 @@ Cada versão nova instala **por cima** da anterior (a chave de teste é fixa).
 ## Fases
 
 - [x] Fase 1 — Estrutura, motor de cálculo, leitores Uber/99, calculadora de teste, APK automático
-- [ ] Fase 2 — Cadastro inicial, custos, metas, dashboard, jornada com GPS, histórico
+- [x] Fase 2 — Cadastro inicial, custos, metas, dashboard, jornada com GPS, histórico
 - [ ] Fase 3 — Leitura automática da tela (Acessibilidade) e classificação
 - [ ] Fase 4 — Painel flutuante
 - [ ] Fase 5 — Licença por token e mensagens motivacionais

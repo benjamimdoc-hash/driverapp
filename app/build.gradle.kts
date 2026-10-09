@@ -2,6 +2,12 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+}
+
+// Guarda o "desenho" do banco a cada versão, para criar migrações sem perder dados.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 android {
@@ -12,8 +18,8 @@ android {
         applicationId = "com.driverapp"
         minSdk = 31          // Android 12 ou superior
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-fase1"
+        versionCode = 2
+        versionName = "0.2.0-fase2"
     }
 
     // Chave de teste FIXA (fica no repositório). Assim cada APK novo instala por cima
@@ -54,10 +60,15 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
