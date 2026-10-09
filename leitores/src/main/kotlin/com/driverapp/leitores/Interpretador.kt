@@ -24,6 +24,8 @@ data class LeituraValidada(
     /** Motivos da baixa confiança, em linguagem simples. */
     val alertas: List<String>,
     val confianca: Confianca,
+    /** Bairro/cidade de destino, só para exibição (nunca é gravado). */
+    val destino: String? = null,
 ) {
     /** Tem o mínimo para mostrar o card: valor e viagem. */
     val utilizavel: Boolean get() = valor != null && viagem != null
@@ -81,6 +83,7 @@ object Interpretador {
             ausentes = ausentes,
             alertas = alertas,
             confianca = if (alertas.isEmpty()) Confianca.ALTA else Confianca.BAIXA,
+            destino = o.destino,
         )
     }
 

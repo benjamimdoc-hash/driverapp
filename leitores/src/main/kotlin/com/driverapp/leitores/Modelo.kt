@@ -26,6 +26,8 @@ data class OfertaLida(
     val reaisPorKmInformado: Double?,
     /** Marcas extras: "Exclusivo", "Verificado", "Pgto. no app"... */
     val observacoes: List<String>,
+    /** Bairro/cidade de destino, só para exibição (nunca é gravado). */
+    val destino: String? = null,
 ) {
     /** Tem o mínimo para calcular: valor e ao menos a viagem. */
     val completa: Boolean get() = valor != null && viagem != null

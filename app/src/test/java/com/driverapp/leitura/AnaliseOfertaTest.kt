@@ -59,6 +59,8 @@ class AnaliseOfertaTest {
         assertEquals(2.541, total.reaisPorKm!!, D)
         assertEquals(37.418, total.reaisPorHora!!, D)
         assertEquals(Nivel.RAZOAVEL, r.nivel)                   // R$/h entre 30 e 45
+        assertEquals(Nivel.BOA, r.nivelKm)                      // cada métrica com a sua cor
+        assertEquals(Nivel.RAZOAVEL, r.nivelHora)
     }
 
     @Test

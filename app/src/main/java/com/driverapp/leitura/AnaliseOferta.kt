@@ -24,6 +24,9 @@ data class ResultadoAnalise(
     val analise: AnaliseCorrida?,
     /** Null quando não há R$/km nem R$/h para classificar (estado neutro, não "ruim"). */
     val nivel: Nivel?,
+    /** Cor de cada métrica pelos limites do motorista (null = sem dados). */
+    val nivelKm: Nivel? = null,
+    val nivelHora: Nivel? = null,
 )
 
 object AnaliseOferta {
@@ -46,6 +49,13 @@ object AnaliseOferta {
         )
         val principal = analise.principal
         val nivel = principal?.let { Classificador.classificar(it.reaisPorKm, it.reaisPorHora, criterios) }
-        return ResultadoAnalise(leitura, categoria, analise, nivel)
+        return ResultadoAnalise(
+            leitura = leitura,
+            categoria = categoria,
+            analise = analise,
+            nivel = nivel,
+            nivelKm = principal?.reaisPorKm?.let { criterios.porKm.nivel(it) },
+            nivelHora = principal?.reaisPorHora?.let { criterios.porHora.nivel(it) },
+        )
     }
 }

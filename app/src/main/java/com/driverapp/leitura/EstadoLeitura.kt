@@ -7,6 +7,7 @@ import com.driverapp.leitores.Leitor99
 import com.driverapp.leitores.LeitorDeOferta
 import com.driverapp.leitores.LeitorUber
 import com.driverapp.leitores.Plataforma
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -19,6 +20,9 @@ object EstadoLeitura {
 
     /** Último app em primeiro plano visto pelo serviço — só o NOME DO PACOTE, e só com o diagnóstico ligado. */
     val ultimoApp = MutableStateFlow<String?>(null)
+
+    /** Pedido do app para o serviço mostrar um card de teste (com o print de referência da Uber). */
+    val pedidoTeste = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     /** O Android está com o serviço de leitura ligado para este app? */
     fun servicoAtivo(context: Context): Boolean {
@@ -61,6 +65,42 @@ object EstadoLeitura {
     fun adicionarPacote(context: Context, pacote: String, plataforma: Plataforma) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(PREFIXO_PACOTE + pacote, plataforma.name).apply()
+    }
+
+    // ---------- Preferências do card flutuante ----------
+
+    private const val CHAVE_OPACIDADE = "card_opacidade"
+    private const val CHAVE_X = "card_x"
+    private const val CHAVE_Y = "card_y"
+    private const val CHAVE_RECOLHIDO = "card_recolhido"
+
+    fun opacidade(context: Context): Float =
+        Opacidade.limitar(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getFloat(CHAVE_OPACIDADE, Opacidade.EQUILIBRADO))
+
+    fun definirOpacidade(context: Context, valor: Float) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putFloat(CHAVE_OPACIDADE, Opacidade.limitar(valor)).apply()
+    }
+
+    /** Posição salva do card em pixels (null = posição padrão, no topo). */
+    fun posicaoCard(context: Context): Pair<Int, Int>? {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!prefs.contains(CHAVE_X) || !prefs.contains(CHAVE_Y)) return null
+        return prefs.getInt(CHAVE_X, 0) to prefs.getInt(CHAVE_Y, 0)
+    }
+
+    fun salvarPosicaoCard(context: Context, x: Int, y: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(CHAVE_X, x).putInt(CHAVE_Y, y).apply()
+    }
+
+    fun restaurarPosicaoCard(context: Context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(CHAVE_X).remove(CHAVE_Y).apply()
+    }
+
+    fun cardRecolhido(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(CHAVE_RECOLHIDO, false)
+
+    fun definirCardRecolhido(context: Context, recolhido: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(CHAVE_RECOLHIDO, recolhido).apply()
     }
 
     fun leitorDe(plataforma: Plataforma): LeitorDeOferta = when (plataforma) {

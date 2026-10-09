@@ -54,6 +54,7 @@ import com.driverapp.ui.componentes.CartaoVidro
 import com.driverapp.ui.componentes.EstadoSalvamento
 import com.driverapp.ui.componentes.IndicadorSalvamento
 import com.driverapp.ui.componentes.SeletorSegmentado
+import com.driverapp.ui.leitura.TelaCardFlutuante
 import com.driverapp.ui.leitura.TelaLeitura
 import kotlinx.coroutines.launch
 
@@ -99,6 +100,7 @@ fun TelaAjustes(config: ConfiguracaoEntity) {
         "bateria" -> { GuiaBateria { aberta = null }; return }
         "limites" -> { TelaLimites(config) { aberta = null }; return }
         "leitura" -> { TelaLeitura(config) { aberta = null }; return }
+        "card" -> { TelaCardFlutuante { aberta = null }; return }
         "calculadora" -> { TelaCalculadora(config); return }
     }
 
@@ -127,6 +129,7 @@ fun TelaAjustes(config: ConfiguracaoEntity) {
             if (leituraAtiva) "Ativa • toque para ver as últimas leituras" else "Desligada • toque para ativar",
             corDetalhe = if (leituraAtiva) p.verde else p.amarelo,
         ) { aberta = "leitura" }
+        Item("Card flutuante", "Transparência, posição e card de teste") { aberta = "card" }
         Item("Limites das cores", "Defina o que é corrida ruim, razoável ou boa") { aberta = "limites" }
 
         Secao("Cadastro")

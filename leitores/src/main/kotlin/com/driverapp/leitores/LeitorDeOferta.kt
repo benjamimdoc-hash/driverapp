@@ -45,7 +45,26 @@ open class LeitorDeOferta(
             corridasPassageiro = lerCorridasPassageiro(texto),
             reaisPorKmInformado = RE_REAIS_POR_KM.find(texto)?.let { Numeros.parse(it.groupValues[1]) },
             observacoes = marcasConhecidas.filter { marca -> texto.contains(marca, ignoreCase = true) },
+            destino = lerDestino(linhas),
         )
+    }
+
+    /**
+     * Destino resumido (só o bairro/cidade, ex.: "Jardim Míriam"), tirado da linha logo abaixo
+     * do trecho da viagem. Serve apenas para exibir no card: NÃO é gravado em lugar nenhum.
+     */
+    private fun lerDestino(linhas: List<String>): String? {
+        val comTrecho = linhas.indices.filter { i ->
+            RE_TRECHO.findAll(linhas[i]).any { m -> m.groups[1] != null || m.groups[2] != null }
+        }
+        val idx = comTrecho.getOrNull(1) ?: return null
+        if (comTrecho.size > 2) return null // mais trechos que o esperado: não arriscar
+        val proxima = linhas.getOrNull(idx + 1)?.trim() ?: return null
+        if (proxima.contains("R$") || RE_TRECHO.containsMatchIn(proxima) || proxima.none { it.isLetter() }) return null
+        if (proxima.startsWith("Aceitar", ignoreCase = true)) return null
+        val partes = proxima.split(',').map { it.trim() }.filter { p -> p.isNotEmpty() && p.any { it.isLetter() } }
+        if (partes.size < 2) return null
+        return partes.last().takeIf { it.length in 2..40 }
     }
 
     /**

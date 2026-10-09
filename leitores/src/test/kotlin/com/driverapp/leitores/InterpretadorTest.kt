@@ -142,3 +142,18 @@ class CategoriasTest {
         assertNull(Categorias.canonica(null))
     }
 }
+
+class DestinoTest {
+    @Test
+    fun destino_resumido_dos_prints() {
+        assertEquals("Poá", LeitorUber.ler(Prints.UBER)!!.destino)
+        assertEquals("Jardim Míriam", Leitor99.ler(Prints.NOVENTA_E_NOVE)!!.destino)
+        assertEquals("Poá", Interpretador.validar(LeitorUber.ler(Prints.UBER)!!).destino)
+    }
+
+    @Test
+    fun sem_linha_de_endereco_nao_inventa_destino() {
+        assertNull(LeitorUber.ler(listOf("R$ 20,00", "3 min (1.0 km)", "15 min (6.0 km)", "Aceitar"))!!.destino)
+        assertNull(LeitorUber.ler(listOf(Prints.UBER.joinToString(" ")))!!.destino)
+    }
+}

@@ -34,6 +34,14 @@ class LeitorTelaService : AccessibilityService() {
         processador = ProcessadorOfertas(applicationContext)
         cartao = CartaoFlutuante(this)
         pacotes = EstadoLeitura.pacotes(this)
+        // "Mostrar card de teste" nos Ajustes: usa o print de referência da Uber com os custos reais.
+        escopo.launch {
+            EstadoLeitura.pedidoTeste.collect {
+                val oferta = com.driverapp.leitores.LeitorUber.ler(ExemplosReferencia.UBER) ?: return@collect
+                val r = ProcessadorOfertas.analisarComCadastro(applicationContext, com.driverapp.leitores.Interpretador.validar(oferta))
+                cartao?.mostrar(r)
+            }
+        }
     }
 
     override fun onAccessibilityEvent(evento: AccessibilityEvent?) {
